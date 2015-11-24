@@ -14415,49 +14415,45 @@ Based on the following sources:
 &lt;/ul&gt;
 &lt;author&gt;Created by librarian@cadsoft.de&lt;/author&gt;</description>
 <packages>
-<package name="POWERDI323">
-<description>1.0A SURFACE MOUNT SCHOTTKY BARRIER RECTIFIER POWERDI ® 323 &lt;p&gt;
-Source: http://www.diodes.com/datasheets/ds30899.pdf</description>
-<smd name="C" x="-0.75" y="0" dx="2" dy="1.1" layer="1"/>
-<smd name="A" x="1.15" y="0" dx="0.8" dy="0.8" layer="1"/>
-<wire x1="-0.875" y1="-0.55" x2="-0.875" y2="0.55" width="0.2032" layer="51"/>
-<wire x1="-0.875" y1="0.55" x2="0.8625" y2="0.55" width="0.2032" layer="51"/>
-<wire x1="0.8625" y1="0.55" x2="0.8625" y2="-0.55" width="0.2032" layer="51"/>
-<wire x1="0.8625" y1="-0.55" x2="-0.875" y2="-0.55" width="0.2032" layer="51"/>
-<rectangle x1="-1.3" y1="-0.5375" x2="-0.525" y2="0.5375" layer="51"/>
-<rectangle x1="0.8375" y1="-0.4" x2="1.3" y2="0.4" layer="51"/>
-<wire x1="0" y1="0.35" x2="-0.425" y2="0" width="0.2" layer="51"/>
-<wire x1="-0.425" y1="0" x2="0" y2="-0.35" width="0.2" layer="51"/>
-<text x="-1.8516" y="0.7786" size="1.27" layer="25">&gt;NAME</text>
-<text x="-1.8516" y="-2.5566" size="1.27" layer="27">&gt;VALUE</text>
+<package name="SOD123">
+<description>&lt;b&gt;Diode&lt;/b&gt;</description>
+<wire x1="-1.1" y1="0.7" x2="1.1" y2="0.7" width="0.254" layer="51"/>
+<wire x1="1.1" y1="0.7" x2="1.1" y2="-0.7" width="0.254" layer="51"/>
+<wire x1="1.1" y1="-0.7" x2="-1.1" y2="-0.7" width="0.254" layer="51"/>
+<wire x1="-1.1" y1="-0.7" x2="-1.1" y2="0.7" width="0.254" layer="51"/>
+<smd name="C" x="-1.9" y="0" dx="1.4" dy="1.4" layer="1"/>
+<smd name="A" x="1.9" y="0" dx="1.4" dy="1.4" layer="1"/>
+<text x="-1.1" y="1" size="1.27" layer="25">&gt;NAME</text>
+<text x="-1.1" y="-2.3" size="1.27" layer="27">&gt;VALUE</text>
+<rectangle x1="-1.95" y1="-0.45" x2="-1.2" y2="0.4" layer="51"/>
+<rectangle x1="1.2" y1="-0.45" x2="1.95" y2="0.4" layer="51"/>
+<rectangle x1="-1.05" y1="-0.65" x2="-0.15" y2="0.7" layer="51"/>
 </package>
 </packages>
 <symbols>
-<symbol name="SCHOTTKY">
+<symbol name="D">
 <wire x1="-1.27" y1="-1.27" x2="1.27" y2="0" width="0.254" layer="94"/>
 <wire x1="1.27" y1="0" x2="-1.27" y2="1.27" width="0.254" layer="94"/>
-<wire x1="1.905" y1="1.27" x2="1.27" y2="1.27" width="0.254" layer="94"/>
 <wire x1="1.27" y1="1.27" x2="1.27" y2="0" width="0.254" layer="94"/>
 <wire x1="-1.27" y1="1.27" x2="-1.27" y2="-1.27" width="0.254" layer="94"/>
 <wire x1="1.27" y1="0" x2="1.27" y2="-1.27" width="0.254" layer="94"/>
-<wire x1="1.905" y1="1.27" x2="1.905" y2="1.016" width="0.254" layer="94"/>
-<wire x1="1.27" y1="-1.27" x2="0.635" y2="-1.27" width="0.254" layer="94"/>
-<wire x1="0.635" y1="-1.016" x2="0.635" y2="-1.27" width="0.254" layer="94"/>
-<text x="-2.286" y="1.905" size="1.778" layer="95">&gt;NAME</text>
-<text x="-2.286" y="-3.429" size="1.778" layer="96">&gt;VALUE</text>
+<text x="2.54" y="0.4826" size="1.778" layer="95">&gt;NAME</text>
+<text x="2.54" y="-2.3114" size="1.778" layer="96">&gt;VALUE</text>
 <pin name="A" x="-2.54" y="0" visible="off" length="short" direction="pas"/>
 <pin name="C" x="2.54" y="0" visible="off" length="short" direction="pas" rot="R180"/>
+<text x="-2.54" y="0" size="0.4064" layer="99" align="center">SpiceOrder 1</text>
+<text x="2.54" y="0" size="0.4064" layer="99" align="center">SpiceOrder 2</text>
 </symbol>
 </symbols>
 <devicesets>
-<deviceset name="PD3S160" prefix="D">
-<description>1.0A SURFACE MOUNT SCHOTTKY BARRIER RECTIFIER POWERDI ® 323 &lt;p&gt;
-Source: http://www.diodes.com/datasheets/ds30899.pdf</description>
+<deviceset name="MBR0520LT" prefix="D">
+<description>&lt;b&gt;SCHOTTKY BARRIER RECTIFIER&lt;/b&gt;&lt;p&gt;
+Source: http://onsemi.com .. MBR0520LT1-D.pdf</description>
 <gates>
-<gate name="G$1" symbol="SCHOTTKY" x="0" y="0"/>
+<gate name="G$1" symbol="D" x="0" y="0"/>
 </gates>
 <devices>
-<device name="" package="POWERDI323">
+<device name="" package="SOD123">
 <connects>
 <connect gate="G$1" pin="A" pad="A"/>
 <connect gate="G$1" pin="C" pad="C"/>
@@ -23441,7 +23437,7 @@ Source: www.farnell.com/datasheets/247.pdf</description>
 <part name="GND9" library="supply1" deviceset="GND" device=""/>
 <part name="GND10" library="supply1" deviceset="GND" device=""/>
 <part name="GND11" library="supply1" deviceset="GND" device=""/>
-<part name="D1" library="diode" deviceset="PD3S160" device=""/>
+<part name="D1" library="diode" deviceset="MBR0520LT" device=""/>
 <part name="R19" library="rcl" deviceset="R-EU_" device="R0805"/>
 <part name="R18" library="rcl" deviceset="R-EU_" device="R0805"/>
 <part name="GND12" library="supply1" deviceset="GND" device=""/>
@@ -23497,7 +23493,7 @@ Source: www.farnell.com/datasheets/247.pdf</description>
 <part name="GND4" library="supply1" deviceset="GND" device=""/>
 <part name="C11" library="resistor" deviceset="CPOL-EU" device="E2.5-5"/>
 <part name="C18" library="rcl" deviceset="C-EU" device="C0805"/>
-<part name="D2" library="diode" deviceset="PD3S160" device=""/>
+<part name="D2" library="diode" deviceset="MBR0520LT" device=""/>
 <part name="C12" library="rcl" deviceset="C-EU" device="C0805"/>
 <part name="D3" library="jasons_stuff" deviceset="1N4004" device=""/>
 </parts>
