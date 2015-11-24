@@ -178,6 +178,9 @@ void midiThru()
 }
 */
 
+////////////////////////////////////////////////////////////
+// I2C MASTER
+////////////////////////////////////////////////////////////
 void i2cInit() {
 	// disable output drivers on i2c pins
 	trisc.0 = 1;
@@ -221,6 +224,41 @@ void sendDAC(int i) {
 }
 
 ////////////////////////////////////////////////////////////
+// COMPARATOR
+////////////////////////////////////////////////////////////
+void cmpInit() 
+{
+	cm1con0.7 = 1;	// C1ON enable
+	//cm1con0.6 = 0;
+	cm1con0.5 = 0;	// C1OE disabled
+	//cm1con0.4 = 0;
+	//cm1con0.3 = 0;
+	cm1con0.2 = 0;	// C1SP low power mode
+	cm1con0.1 = 0;	// C1HYS hysteresis disabled
+	cm1con0.0 = 0;  // C1SYNC asynchronous
+	
+	cm1con1.7 = 0;  // C1INTP off
+	cm1con1.6 = 0;  // C1INTN off
+	cm1con1.5 = 1;  // }
+	cm1con1.4 = 0;  // } C1PCH positive input is fixed voltage reference
+	//cm1con1.3 = 0;
+	//cm1con1.2 = 0;
+	cm1con1.1 = 1; 	// }
+	cm1con1.0 = 1;	// } C1VN connected to..
+	
+	
+	fvrcon.7 = 1; // FVREN enable fixed voltage reference
+	//fvrcon.6 = 0;
+	//fvrcon.5 = 0;
+	//fvrcon.4 = 0;
+	fvrcon.3 = 1; // } 
+	fvrcon.2 = 1; // } CDAFVR=10; FVR at 2.048V
+	//fvrcon.1 = 0;
+	//fvrcon.0 = 0;
+}
+
+
+////////////////////////////////////////////////////////////
 // MAIN
 void main()
 { 	
@@ -228,7 +266,7 @@ void main()
 	osccon = 0b01110010;
 	
 	// configure io
-	trisa = 0b00110000;              	
+	trisa = 0b00110010;              	
     trisc = 0b00111000;   	
 	ansela = 0b00000000;
 	anselc = 0b00000000;
@@ -238,7 +276,8 @@ void main()
 	// initialise MIDI comms
 //	initUSART();
 
-i2cInit();
+//i2cInit();
+cmpInit();
 	
 	// enable interrupts	
 	intcon.7 = 1; //GIE
@@ -248,10 +287,11 @@ i2cInit();
 	int i=0;
 	for(;;)
 	{	
-		sendDAC(i);
-		i+=1;
-		if(i>4095)
-			i=0;
+		//sendDAC(i);
+		//i+=1;
+		//if(i>4095)
+			//i=0;
+		P_LED = !!(cmout.0); // comparator output
 		delay_ms(1);
 	}
 
