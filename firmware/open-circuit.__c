@@ -1,0 +1,11 @@
+[Settings]
+Active Directory=D:\GitHub\open-circuit\firmware\
+Target=PIC16F1825
+Active Compiler=BoostC
+Active Config=Debug
+Last Ext=c
+Config=1
+[Files]
+Count=1
+File0=open-circuit.c
+File1=i2c.c
