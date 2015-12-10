@@ -24286,15 +24286,15 @@ Source: www.farnell.com/datasheets/247.pdf</description>
 <label x="124.46" y="154.94" size="1.778" layer="95"/>
 </segment>
 <segment>
-<pinref part="ISCP" gate="G$1" pin="ICSP_DAT/PGD"/>
-<wire x1="-111.76" y1="48.26" x2="-43.18" y2="48.26" width="0.1524" layer="91"/>
-<wire x1="-43.18" y1="48.26" x2="-43.18" y2="83.82" width="0.1524" layer="91"/>
+<wire x1="-43.18" y1="45.72" x2="-43.18" y2="83.82" width="0.1524" layer="91"/>
 <label x="-38.1" y="83.82" size="1.778" layer="95"/>
 <junction x="-43.18" y="83.82"/>
 <wire x1="-43.18" y1="83.82" x2="-48.26" y2="83.82" width="0.1524" layer="91"/>
 <wire x1="-43.18" y1="83.82" x2="-27.94" y2="83.82" width="0.1524" layer="91"/>
 <pinref part="IC1" gate="G$1" pin="RA1/ICPCLK"/>
 <junction x="-48.26" y="83.82"/>
+<pinref part="ISCP" gate="G$1" pin="ICSP_CLK/PGC"/>
+<wire x1="-111.76" y1="45.72" x2="-43.18" y2="45.72" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$34" class="0">
@@ -24314,9 +24314,7 @@ Source: www.farnell.com/datasheets/247.pdf</description>
 <pinref part="SW1" gate="1" pin="P"/>
 </segment>
 <segment>
-<pinref part="ISCP" gate="G$1" pin="ICSP_CLK/PGC"/>
-<wire x1="-111.76" y1="45.72" x2="-45.72" y2="45.72" width="0.1524" layer="91"/>
-<wire x1="-45.72" y1="45.72" x2="-45.72" y2="86.36" width="0.1524" layer="91"/>
+<wire x1="-45.72" y1="48.26" x2="-45.72" y2="86.36" width="0.1524" layer="91"/>
 <wire x1="-45.72" y1="86.36" x2="-40.64" y2="86.36" width="0.1524" layer="91"/>
 <label x="-38.1" y="86.36" size="1.778" layer="95"/>
 <junction x="-40.64" y="86.36"/>
@@ -24325,6 +24323,8 @@ Source: www.farnell.com/datasheets/247.pdf</description>
 <wire x1="-48.26" y1="86.36" x2="-45.72" y2="86.36" width="0.1524" layer="91"/>
 <junction x="-45.72" y="86.36"/>
 <junction x="-48.26" y="86.36"/>
+<pinref part="ISCP" gate="G$1" pin="ICSP_DAT/PGD"/>
+<wire x1="-111.76" y1="48.26" x2="-45.72" y2="48.26" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$35" class="0">
