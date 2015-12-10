@@ -22,8 +22,12 @@ typedef unsigned char byte;
 // MACRO DEFS
 //
 
-// inputs
-#define P_LED		portc.2
+#define P_LED		lata.2
+
+#define P_SRDAT		latc.3
+#define P_SRCLK		lata.5
+#define P_SRLAT		lata.4
+
 
 // MIDI beat clock messages
 #define MIDI_SYNCH_TICK     	0xf8
@@ -216,10 +220,16 @@ void i2cEndMsg() {
 	while(!pir1.3); // wait for it to complete
 }
 
-void sendDAC(int i) {
+void sendDAC(int n0, int v0, int n1, int v1) {
   i2cBeginWrite(0b1100000);
-  i2cWrite((i>>8) & 0xF);
-  i2cWrite(i & 0xFF);
+  i2cWrite((n1>>8) & 0xF);
+  i2cWrite(n1 & 0xFF);
+  i2cWrite((v1>>8) & 0xF);
+  i2cWrite(v1 & 0xFF);
+  i2cWrite((v0>>8) & 0xF);
+  i2cWrite(v0 & 0xFF);
+  i2cWrite((n0>>8) & 0xF);
+  i2cWrite(n0 & 0xFF);
   i2cEndMsg();
 }
 
@@ -257,6 +267,17 @@ void cmpInit()
 	//fvrcon.0 = 0;
 }
 
+void load_sr(byte d) {
+	byte m = 0x80;
+	P_SRLAT = 0;
+	while(m) {
+		P_SRCLK = 0;
+		P_SRDAT = !!(d&m);
+		P_SRCLK = 1;
+		m>>=1;
+	}
+	P_SRLAT = 1;
+}
 
 ////////////////////////////////////////////////////////////
 // MAIN
@@ -264,10 +285,11 @@ void main()
 { 	
 	// osc control / 8MHz / internal
 	osccon = 0b01110010;
-	
+
+
 	// configure io
-	trisa = 0b00110010;              	
-    trisc = 0b00111000;   	
+	trisa = 0b00000010;              	
+    trisc = 0b00110000;   	
 	ansela = 0b00000000;
 	anselc = 0b00000000;
 	porta=0;
@@ -276,8 +298,16 @@ void main()
 	// initialise MIDI comms
 //	initUSART();
 
-//i2cInit();
-cmpInit();
+#define SRB_GATA	0x01
+#define SRB_GATB	0x02
+#define SRB_DRM1 	0x08
+#define SRB_DRM2 	0x10
+#define SRB_DRM3 	0x04
+#define SRB_DRM4 	0x20
+#define SRB_SYNC	0x40
+
+i2cInit();
+//cmpInit();
 	
 	// enable interrupts	
 	intcon.7 = 1; //GIE
@@ -287,12 +317,18 @@ cmpInit();
 	int i=0;
 	for(;;)
 	{	
-		//sendDAC(i);
-		//i+=1;
-		//if(i>4095)
-			//i=0;
-		P_LED = !!(cmout.0); // comparator output
-		delay_ms(1);
+		P_LED = !!(i&0x80); // comparator output
+		load_sr((i&0x2)?0x01:0x00);
+++i;
+		sendDAC(0,i,0,0);
+		i+=1;
+		if(i>4095)
+			i=0;
+	//	P_LED = !!(cmout.0); // comparator output
+		delay_ms(10);
 	}
 
 }
+
+
+
