@@ -22,7 +22,8 @@ typedef unsigned char byte;
 // MACRO DEFS
 //
 
-#define P_LED		lata.2
+#define P_LED1		lata.2
+#define P_LED2		latc.2
 
 #define P_SRDAT		latc.3
 #define P_SRCLK		lata.5
@@ -35,12 +36,40 @@ typedef unsigned char byte;
 #define MIDI_SYNCH_CONTINUE 	0xfb
 #define MIDI_SYNCH_STOP     	0xfc
 
+#define SRB_GATA	0x01
+#define SRB_GATB	0x02
+#define SRB_DRM1 	0x08
+#define SRB_DRM2 	0x10
+#define SRB_DRM3 	0x04
+#define SRB_DRM4 	0x20
+#define SRB_SYNC	0x40
 
+#define GATE_A		0
+#define GATE_B		1
+#define GATE_DRM1	2
+#define GATE_DRM2	3
+#define GATE_DRM3	4
+#define GATE_DRM4	5
+#define GATE_SYNC	6
+
+#define CHANNEL_A 	0
+#define CHANNEL_B 	1
+#define CHANNEL_DRUMS 	9
+
+#define NOTE_DRUM1	0x3c
+#define NOTE_DRUM2	0x3e
+#define NOTE_DRUM3	0x40
+#define NOTE_DRUM4	0x41
+
+#define VEL_ACCENT 100
+
+#define TRIG_PULSE 5 //ms
+#define LED_TIME 10 //ms
 //
 // GLOBAL DATA
 //
 
-// timer stuff
+#define TIMER_0_INIT_SCALAR		5	// Timer 0 is an 8 bit timer counting at 250kHz
 
 // define the buffer used to receive MIDI input
 #define SZ_RXBUFFER 20
@@ -49,26 +78,42 @@ volatile byte rxHead = 0;
 volatile byte rxTail = 0;
 
 volatile byte beatcount = 0;
+
+
+// state variables
+byte srData = 0;
+byte midiInRunningStatus;
+byte midiNumParams;
+byte midiParams[2];
+char midiParamIndex;
+
+char gateTime[8] = {0};
+char ledTime = 0;
+
+int cvPitchA = 0;
+int cvPitchB = 0;
+int cvVolA = 0;
+int cvVolB = 0;
+
+volatile byte msTick = 0;
 void interrupt( void )
 {
-		
+	// TIMER0 OVERFLOW
+	// Timer 0 overflow is used to 
+	// create a once per millisecond
+	// count
+	if(intcon.2)
+	{
+		tmr0 = TIMER_0_INIT_SCALAR;
+		msTick = 1;
+		intcon.2 = 0;		
+	}		
 	// serial rx ISR
 	if(pir1.5)
 	{	
 		// get the byte
 		byte b = rcreg;
 
-		if(b==0xf8) {
-			if(++beatcount == 24) {
-				P_LED = 1;
-				beatcount = 0;
-			}
-			else {
-				P_LED = 0;
-			}			
-		}
-		 
-/*		
 		// calculate next buffer head
 		byte nextHead = (rxHead + 1);
 		if(nextHead >= SZ_RXBUFFER) 
@@ -82,11 +127,12 @@ void interrupt( void )
 			// store the byte
 			rxBuffer[rxHead] = b;
 			rxHead = nextHead;
-		}		*/
+		}		
 		pir1.5 = 0;
 	}
 	
 }
+
 
 ////////////////////////////////////////////////////////////
 // INITIALISE SERIAL PORT FOR MIDI
@@ -120,10 +166,9 @@ void initUSART()
 	
 }
 
-/*
 ////////////////////////////////////////////////////////////
-// RUN MIDI THRU
-void midiThru()
+// RUN MIDI IN
+byte midiIn()
 {
 	// loop until there is no more data or
 	// we receive a full message
@@ -139,48 +184,67 @@ void midiThru()
 		if(rxHead == rxTail)
 		{
 			// no data ready
-			return;
+			return 0;
 		}
 		
 		// read the character out of buffer
-		byte q = rxBuffer[rxTail];
+		byte ch = rxBuffer[rxTail];
 		if(++rxTail >= SZ_RXBUFFER) 
 			rxTail -= SZ_RXBUFFER;
 
-		// Check for MIDI realtime message (e.g. clock)
-		if((q & 0xF8) == 0xF8)
+		// REALTIME MESSAGE
+		if((ch & 0xf0) == 0xf0)
 		{
-			// if we are not passing realtime messages then skip it
-			if(!(_options & OPTION_PASSREALTIMEMSG))
-				continue;
-		}
-		else
+			switch(ch)
+			{
+			case MIDI_SYNCH_TICK:
+			case MIDI_SYNCH_START:
+			case MIDI_SYNCH_CONTINUE:
+			case MIDI_SYNCH_STOP:
+			break;
+			}
+		}      
+		// CHANNEL STATUS MESSAGE
+		else if(!!(ch & 0x80))
 		{
-			// if we are not passing non-realtime messages then skip it
-			if(!(_options & OPTION_PASSOTHERMSG))
-				continue;
-		}
-		
-		// should we animate the LEDs based on thru traffic?
-		if(MODE_NOCLOCK == _mode && (_options & OPTION_THRUANIMATE))
+			midiParamIndex = 0;
+			midiInRunningStatus = ch; 
+			switch(ch & 0xF0)
+			{
+			case 0xA0: //  Aftertouch  1  key  touch  
+			case 0xC0: //  Patch change  1  instrument #   
+			case 0xD0: //  Channel Pressure  1  pressure  
+				midiNumParams = 1;
+				break;    
+			case 0x80: //  Note-off  2  key  velocity  
+			case 0x90: //  Note-on  2  key  veolcity  
+			case 0xB0: //  Continuous controller  2  controller #  controller value  
+			case 0xE0: //  Pitch bend  2  lsb (7 bits)  msb (7 bits)  
+			default:
+				midiNumParams = 2;
+				break;        
+			}
+		}    
+		else if(midiInRunningStatus)
 		{
-			// animate and send
-			duty[q%6] = q%INITIAL_DUTY;
-			send(q);
+			// gathering parameters
+			midiParams[midiParamIndex++] = ch;
+			if(midiParamIndex >= midiNumParams)
+			{
+				midiParamIndex = 0;
+				switch(midiInRunningStatus & 0xF0)
+				{
+				case 0x80: // note off
+				case 0x90: // note on
+					return midiInRunningStatus; // return to the arp engine
+				default:
+					break;
+				}
+			}
 		}
-		// should we indicate thru traffic with flickering LEDs?
-		else 
-		{					
-			// flicker and send
-			P_LED2 = 1;
-			P_LED3 = 1;
-			send(q);
-			P_LED2 = 0;
-			P_LED3 = 0;
-		}
-	}		
+	}
+	return 0;
 }
-*/
 
 ////////////////////////////////////////////////////////////
 // I2C MASTER
@@ -279,6 +343,77 @@ void load_sr(byte d) {
 	P_SRLAT = 1;
 }
 
+void startNote(byte which, byte note, byte vel) {
+	long dacNote = ((long)note * 500)/12;
+	long dacVol = ((long)vel * 2500)/127;
+	if(dacNote < 0) dacNote = 0;
+	if(dacNote > 4095) dacNote = 4095;
+	if(dacVol< 0) dacVol = 0;
+	if(dacVol > 4095) dacVol = 4095;
+	if(which == 1) {
+		cvPitchB = dacNote;
+		cvVolB = dacVol;
+		srData |= SRB_GATB;
+		load_sr(srData);
+	}
+	else {
+		cvPitchA = dacNote;
+		cvVolA = dacVol;
+		srData |= SRB_GATA;
+		load_sr(srData);
+	}
+	sendDAC(cvPitchA, cvVolA, cvPitchB, cvVolB);
+}
+
+void stopNote(byte which) {
+	if(which == 1) {
+		cvVolB = 0;
+		srData &= ~SRB_GATB;
+		load_sr(srData);
+	}
+	else {
+		cvVolA = 0;
+		srData &= ~SRB_GATA;
+		load_sr(srData);
+	}
+	sendDAC(cvPitchA, cvVolA, cvPitchB, cvVolB);
+}
+
+void initTimer0() {
+	// Configure timer 0 (controls systemticks)
+	// 	timer 0 runs at 2MHz
+	// 	prescaled 1/8 = 250kHz
+	// 	rollover at 250 = 1kHz
+	// 	1ms per rollover	
+	option_reg.5 = 0; // timer 0 driven from instruction cycle clock
+	option_reg.3 = 0; // timer 0 is prescaled
+	option_reg.2 = 0; // }
+	option_reg.1 = 1; // } 1/16 prescaler
+	option_reg.0 = 0; // }
+	intcon.5 = 1; 	  // enabled timer 0 interrrupt
+	intcon.2 = 0;     // clear interrupt fired flag	
+}
+
+void trigPulse(int which, int ms) {
+	byte d = srData;
+	switch(which) {
+		case GATE_A: 	srData |= SRB_GATA; break;
+		case GATE_B: 	srData |= SRB_GATB; break;
+		case GATE_DRM1: srData |= SRB_DRM1; break;
+		case GATE_DRM2: srData |= SRB_DRM2; break;
+		case GATE_DRM3: srData |= SRB_DRM3; break;
+		case GATE_DRM4: srData |= SRB_DRM4; break;
+		case GATE_SYNC: srData |= SRB_SYNC; break;
+		default: return;
+	}	
+	if(d != srData) {
+		load_sr(srData);
+	}
+	gateTime[which] = ms;
+}
+
+
+
 ////////////////////////////////////////////////////////////
 // MAIN
 void main()
@@ -295,19 +430,14 @@ void main()
 	porta=0;
 	portc=0;
 
-	// initialise MIDI comms
-//	initUSART();
 
-#define SRB_GATA	0x01
-#define SRB_GATB	0x02
-#define SRB_DRM1 	0x08
-#define SRB_DRM2 	0x10
-#define SRB_DRM3 	0x04
-#define SRB_DRM4 	0x20
-#define SRB_SYNC	0x40
+	// initialise MIDI comms
+	initUSART();
+initTimer0();
 
 i2cInit();
 //cmpInit();
+load_sr(0);
 	
 	// enable interrupts	
 	intcon.7 = 1; //GIE
@@ -316,16 +446,98 @@ i2cInit();
 	// App loop
 	int i=0;
 	for(;;)
-	{	
-		P_LED = !!(i&0x80); // comparator output
-		load_sr((i&0x2)?0x01:0x00);
-++i;
-		sendDAC(0,i,0,0);
-		i+=1;
-		if(i>4095)
-			i=0;
+	{
+		if(msTick) {
+			byte d = srData;
+			for(int g = 0; g<8; ++g) {
+				if(gateTime[g]) {
+					if(--gateTime[g] == 0) {
+						switch(g) {
+							case GATE_A: srData &= ~SRB_GATA; break;
+							case GATE_B: srData &= ~SRB_GATB; break;
+							case GATE_DRM1: srData &= ~SRB_DRM1; break;
+							case GATE_DRM2: srData &= ~SRB_DRM2; break;
+							case GATE_DRM3: srData &= ~SRB_DRM3; break;
+							case GATE_DRM4: srData &= ~SRB_DRM4; break;
+							case GATE_SYNC: srData &= ~SRB_SYNC; break;
+						}
+					}
+				}
+			}
+			if(d != srData) {
+				load_sr(srData);
+			}
+			if(ledTime && !--ledTime) {
+				P_LED1 = 0;
+			}
+			msTick = 0;
+		}
+		
+		
+		byte msg = midiIn();		
+		switch(msg & 0xF0) {
+			case 0x90:			
+				P_LED1 = 1;
+				ledTime = LED_TIME;
+			case 0x80:
+				if((msg & 0x0F) == CHANNEL_A) {
+					if(midiParams[1] && (msg & 0xF0) == 0x90) {
+						startNote(0, midiParams[0], midiParams[1]);							
+					}
+					else {
+						stopNote(0);							
+					}
+				}
+				else
+				if((msg & 0x0F) == CHANNEL_B) {
+					if(midiParams[1] && (msg & 0xF0) == 0x90) {
+						startNote(1, midiParams[0], midiParams[1]);							
+					}
+					else {
+						stopNote(1);							
+					}
+				}
+				else
+				if((msg & 0x0F) == CHANNEL_DRUMS) {
+					if(midiParams[1] && (msg & 0xF0) == 0x90) {					
+						switch(midiParams[0]) {
+							case NOTE_DRUM1: trigPulse(GATE_DRM1, TRIG_PULSE); break;
+							case NOTE_DRUM2: trigPulse(GATE_DRM2, TRIG_PULSE); break;
+							case NOTE_DRUM3: trigPulse(GATE_DRM3, TRIG_PULSE); break;
+							case NOTE_DRUM4: trigPulse(GATE_DRM4, TRIG_PULSE); break;
+						}
+						if(midiParams[1] >= VEL_ACCENT) {
+							trigPulse(GATE_SYNC, TRIG_PULSE); 
+						}
+						break;
+					}
+				}
+				break;
+				
+				
+				
+				if(midiParams[1] > 0) {
+					switch(midiParams[0]) {
+						case NOTE_DRUM1:
+						case NOTE_DRUM2:
+						case NOTE_DRUM3:
+						case NOTE_DRUM4:
+							break;
+						default:
+							startNote(0, midiParams[0], midiParams[1]);							
+							break;
+					}
+					break;
+				}
+		}
+		
+		/*
+		*/
+		
+		//i+=1;
+		//if(i>4095)
+//			i=0;
 	//	P_LED = !!(cmout.0); // comparator output
-		delay_ms(10);
 	}
 
 }
